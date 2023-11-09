@@ -3,26 +3,27 @@ from flask import Flask, render_template, request
 import json
 app = Flask("Emotion Detection")
 
-def format(result):
-    dominant = result["dominant_emotion"]
-    del result["dominant_emotion"]
+def format(response):
+    dominant = response["dominant_emotion"]
+    del response["dominant_emotion"]
     return ("For the given statement, the system response is " + 
-        json.dumps(result)[1:-1] + ". The dominant emotion is " + dominant + ".")
+        json.dumps(response)[1:-1] + ". The dominant emotion is " + dominant + ".")
 
 
 @app.route("/")
 def render_index_page():
     return render_template("index.html")
 
+
 @app.route("/emotionDetector")
 def run():
     text_to_analyze = request.args.get("textToAnalyze")
-    result = emotion_detector(text_to_analyze)
+    response = emotion_detector(text_to_analyze)
 
-    if result is None:
-        return "Error. Please enter valid text."
+    if response is None:
+        return "Invalid text! Please try again!"
     else:
-        return format(result)
+        return format(response)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
