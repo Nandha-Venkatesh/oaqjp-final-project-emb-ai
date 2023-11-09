@@ -1,34 +1,38 @@
-import requests
+""" Importing the emotion detection function from the EmotionDetection package 
+    Importing flask, render_template, and request to run the server
+    Importing json to process json data """
+
 import json
+from flask import Flask, render_template, request
+from EmotionDetection.emotion_detection import emotion_detector
 
-def format_output(text):
-    data = json.loads(text)
-    output = data["emotionPredictions"][0]["emotion"]
-    dominant = max(output, key=output.get)
-    output["dominant_emotion"] = dominant
-    return output
+app = Flask("Emotion Detection")
 
-def emotion_detector(text_to_analyze):
-    if not text_to_analyze.strip():
-        return None
+def format_output(response):
+    """ Function to properly format the emotion data for output """
 
-    url = "https://sn-watson-emotion.labs.skills.network/v1/watson.runtime.nlp.v1/NlpService/EmotionPredict"
-    headers = {"grpc-metadata-mm-model-id": "emotion_aggregated-workflow_lang_en_stock"}
-    data = { "raw_document": { "text": text_to_analyze } }
+    dominant = response["dominant_emotion"]
+    del response["dominant_emotion"]
+    return ("For the given statement, the system response is " +
+        json.dumps(response)[1:-1] + ". The dominant emotion is " + dominant + ".")
 
-    resp = requests.post(url, headers=headers, json=data)
 
-    if resp.status_code == 200:
-        print(resp)
-        return format_output(resp.text)
-    elif resp.status_code == 400:
-        return {"anger": None, "disgust": None, "fear": None, "joy": None,
-                "sadness": None, "dominant_emotion": None}
-    else:
-        print("An error occurred. Status code: " + str(resp.status_code))
-        exit
+@app.route("/")
+def render_index_page():
+    """ Function to render index.html """
+    return render_template("index.html")
+
+
+@app.route("/emotionDetector")
+def run():
+    """ Function that runs the emotion detector and returns the proper output """
+
+    text_to_analyze = request.args.get("textToAnalyze")
+    response = emotion_detector(text_to_analyze)
+
+    if response is None:
+        return "Invalid text! Please try again!"
+    return format_output(response)
 
 if __name__ == "__main__":
-    text = input("Write some text to analyze and press enter.\n")
-    result = emotion_detector(text)
-    print(result)
+    app.run(host="0.0.0.0", port=5000)
